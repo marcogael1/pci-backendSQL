@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import { LogService } from './services/logs.service';
 import { GlobalExceptionFilter } from './filters/global-exception.filter';
@@ -11,8 +11,9 @@ async function bootstrap() {
   app.use(cookieParser());
   const logService = app.get(LogService);
   app.useGlobalFilters(new GlobalExceptionFilter(logService));
-  await app.listen(3000);
-  console.log('Servidor corriendo en http://localhost:3000');
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Servidor corriendo en el puerto ${port}`);
 }
 
 bootstrap();
