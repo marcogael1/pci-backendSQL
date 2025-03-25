@@ -1,0 +1,12 @@
+config:
+  target: "https://PCITecnologia:3000"
+  tls:
+    rejectUnauthorized: false
+  phases:
+    - duration: 60  # Ejecutar durante 5 segundos
+      arrivalRate: 30
+      rampTo:   50 # 5 solicitudes por segundo
+scenarios:
+  - flow:
+      - get:
+          url: "/products"
