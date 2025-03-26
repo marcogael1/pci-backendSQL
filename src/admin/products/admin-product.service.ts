@@ -49,7 +49,8 @@ export class AdminProductService {
           'product.price AS price',
           'product.stock AS stock',
           'product.image_url AS image_url',
-          'COALESCE(ventas.total_ventas, 0) AS total_ventas'
+          'COALESCE(ventas.total_ventas, 0) AS total_ventas',
+          'subcategory.name AS subcategory_name'
         ])
         .getRawMany();
   
@@ -59,7 +60,8 @@ export class AdminProductService {
         price: Number(row.price),
         stock: row.stock,
         image_url: row.image_url,
-        totalVentas: Number(row.total_ventas)
+        totalVentas: Number(row.total_ventas),
+        subcategoryName: row.subcategory_name
       }));
     } catch (error) {
       throw new InternalServerErrorException('Error al obtener los productos con ventas.');
