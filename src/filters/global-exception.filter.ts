@@ -1,9 +1,21 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, InternalServerErrorException, HttpStatus } from '@nestjs/common';
-import { Response, Request } from 'express';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
 import { QueryFailedError, EntityNotFoundError, TypeORMError } from 'typeorm';
 import { ValidationError } from 'class-validator';
 import { LogService } from '../services/logs.service';
+import * as jwt from 'jsonwebtoken';
 
+interface User {
+  id: number;
+  email: string;
+  role: string;
+}
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(private readonly logService: LogService) {}
@@ -17,57 +29,89 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let message = 'Error interno del servidor';
     let errorType = 'UnknownError';
 
-    // 🔍 Obtener datos del usuario autenticado (si existe)
-    let userInfo = 'Usuario no autenticado';
-    if (request.user) {
-      userInfo = `Usuario: ${request.user.email} (ID: ${request.user.id}, Rol: ${request.user.role})`;
-    }
+    // Usuario
+    // Intentar extraer usuario desde la cookie (sin necesidad de guard)
+    let user: User | null = null;
+    try {
+      const token = request.cookies?.jwt;
+      if (token) {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded?.userId && decoded?.email && decoded?.role) {
+          user = {
+            id: Number(decoded.userId),
+            email: decoded.email,
+            role: decoded.role,
+          };
+        }
+      }
+    } catch (err) {}
 
-    // 🔥 TypeORM: Error en consultas a la BD
+    const clientIp = getClientIp(request);
+
+    // Tipo de error
     if (exception instanceof QueryFailedError) {
       status = HttpStatus.BAD_REQUEST;
-      message = `Error en la consulta: ${(exception as QueryFailedError).message}`;
-      errorType = 'TypeORM QueryFailedError';
-    } 
-    else if (exception instanceof EntityNotFoundError) {
+      message = `Error en la consulta: ${exception.message}`;
+      errorType = 'QueryFailedError';
+    } else if (exception instanceof EntityNotFoundError) {
       status = HttpStatus.NOT_FOUND;
       message = 'Entidad no encontrada';
-      errorType = 'TypeORM EntityNotFoundError';
-    } 
-    else if (exception instanceof TypeORMError) {
+      errorType = 'EntityNotFoundError';
+    } else if (exception instanceof TypeORMError) {
       status = HttpStatus.BAD_REQUEST;
       message = `Error en TypeORM: ${exception.message}`;
       errorType = 'TypeORMError';
-    } 
-    // 🔥 Class-Validator: Error de validación en DTOs
-    else if (Array.isArray(exception) && exception[0] instanceof ValidationError) {
+    } else if (
+      Array.isArray(exception) &&
+      exception[0] instanceof ValidationError
+    ) {
       status = HttpStatus.UNPROCESSABLE_ENTITY;
       message = 'Error de validación en la entrada de datos';
       errorType = 'ValidationError';
-    } 
-    // 🔥 HTTP Exception: Errores personalizados (como 401, 403, 404, etc.)
-    else if (exception instanceof HttpException) {
+    } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       message = exception.message;
       errorType = 'HttpException';
-    } 
-    // ❗ Error desconocido
-    else {
+    } else {
       message = exception.message || 'Error desconocido';
       errorType = exception.constructor?.name || 'UnknownError';
     }
 
-    // 📌 Registrar el error en la base de datos con información del usuario
-    const logMessage = `[${errorType}] ${message} - Ruta: ${request.url} - ${userInfo}`;
-    await this.logService.createLog(logMessage);
+    const logLevel = getLogLevel(status);
 
-    // 📌 Enviar la respuesta JSON al frontend
+    await this.logService.createLog(
+      `[${errorType}] ${message}`,
+      logLevel,
+      user,
+      request.url,
+      clientIp,
+    );
+
+    // Respuesta al frontend
     response.status(status).json({
       statusCode: status,
-      errorType: errorType,
-      message: message,
+      errorType,
+      message,
       path: request.url,
       timestamp: new Date().toISOString(),
     });
   }
+}
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers['x-forwarded-for'];
+  let ip = Array.isArray(forwarded)
+    ? forwarded[0]
+    : (forwarded ?? request.socket.remoteAddress) || '';
+
+  if (ip === '::1') return '127.0.0.1';
+  if (ip.startsWith('::ffff:')) return ip.replace('::ffff:', '');
+  return ip;
+}
+
+function getLogLevel(status: number): 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL' {
+  if (status >= 500) return 'CRITICAL';
+  if (status >= 400 && status < 500) return 'ERROR';
+  if (status >= 300 && status < 400) return 'WARN';
+  return 'INFO';
 }

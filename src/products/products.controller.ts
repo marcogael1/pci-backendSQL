@@ -1,4 +1,10 @@
-import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ProductService } from './products.service';
 import { ProductDetails } from 'src/schemas/productos.schema';
 import { Filter } from '../schemas/filters.schema';
@@ -19,47 +25,47 @@ export class ProductController {
     return await this.productService.getAllProductDetails();
   }
 
-
   @Get('by-category/:name')
   async getProductsByCategory(
     @Param('name') categoryName: string,
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
     @Query('brandId') brandId?: number,
-    @Query('colorId') colorId?: number
+    @Query('colorId') colorId?: number,
   ) {
     return this.productService.findByCategoryWithFilters(
       categoryName,
       minPrice,
       maxPrice,
       brandId,
-      colorId
+      colorId,
     );
   }
-
 
   @Get('by-name')
   async getProductByName(@Query('name') productName: string) {
     const decodedProductName = decodeURIComponent(productName); // 🔥 Decodifica caracteres
     return this.productService.findByName(decodedProductName);
   }
-  
-  
 
   @Get('search')
   async searchProducts(@Query('query') query: string) {
     return await this.productService.searchProducts(query);
   }
 
-
   @Get('filter')
   async filterProducts(
     @Query('minPrice') minPrice?: number,
     @Query('maxPrice') maxPrice?: number,
     @Query('brandId') brandId?: number,
-    @Query('colorId') colorId?: number
+    @Query('colorId') colorId?: number,
   ) {
-    return this.productService.filterProducts(minPrice, maxPrice, brandId, colorId);
+    return this.productService.filterProducts(
+      minPrice,
+      maxPrice,
+      brandId,
+      colorId,
+    );
   }
 
   @Get('brands')
@@ -71,33 +77,42 @@ export class ProductController {
     return this.productService.getUniqueColors();
   }
 
-  @Get('by-subcategory/:subcategoryName')
-  async getProductsBySubcategory(
-    @Param('subcategoryName') subcategoryName: string,
-    @Query('filters') filters: string, // Los filtros serán pasados como una cadena JSON
-    @Query('minPrice') minPrice: number,
-    @Query('maxPrice') maxPrice: number,
-    @Query('brands') brands: string | string[]  // Puede ser una cadena o un arreglo
-  ): Promise<{
-    products: ProductDetails[];
-    filters: FilterWithValues[];
-    brands: string[];
-  }> {
-    // Si solo es una marca (cadena), conviértela a un arreglo
-    if (typeof brands === 'string') {
-      brands = [brands];  // Convertir la cadena en un arreglo
-    }
-
-    const parsedFilters = JSON.parse(filters || '{}'); // Parseamos los filtros a un objeto
-    // Llamar a la función sin envolver `brands` en un objeto
-    return this.productService.getProductsBySubcategoryName(subcategoryName, parsedFilters, minPrice, maxPrice, brands);
-  }
+@Get('by-subcategory/:subcategoryName')
+async getProductsBySubcategory(
+  @Param('subcategoryName') subcategoryName: string,
+): Promise<{
+  products: ProductDetails[];
+  filters: FilterWithValues[];
+  brands: {
+    id: number;
+    name: string;
+    product_ids: number[];
+  }[];
+}> {
+  return this.productService.getProductsBySubcategoryName(subcategoryName);
+}
 
 
 
   @Get(':id/specifications')
   async getProductSpecifications(@Param('id') productId: number) {
     return await this.productService.getProductSpecifications(productId);
+  }
+
+  @Get('recomendados')
+  async getRecommendedProducts() {
+    return await this.productService.getRecommendedProducts();
+  }
+
+
+  @Get('top-subcategories')
+  async getTopSubcategories() {
+    return this.productService.getTopSubcategoriesWithMostProducts();
+  }
+
+  @Get(':id/relacionados')
+  async getRelated(@Param('id') id: number) {
+    return this.productService.getRelatedProducts(id);
   }
 
 }

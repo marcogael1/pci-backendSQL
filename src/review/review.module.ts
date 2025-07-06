@@ -7,12 +7,8 @@ import { Review } from 'src/schemas/review.schema';
 import { User } from 'src/schemas/user.schema';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([ProductDetails,Review, User]),
-    ],
-    controllers: [
-        ReviewController,],
-    providers: [
-        ReviewService,],
+  imports: [TypeOrmModule.forFeature([ProductDetails, Review, User])],
+  controllers: [ReviewController],
+  providers: [ReviewService],
 })
-export class ReviewModule { }
+export class ReviewModule {}

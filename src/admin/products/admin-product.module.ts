@@ -8,9 +8,16 @@ import { Category } from 'src/schemas/category.schema';
 import { ProductSale } from 'src/schemas/productSale.schema';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProductDetails, Subcategory, Category, ProductSale])],
-  controllers: [AdminProductController], 
+  imports: [
+    TypeOrmModule.forFeature([
+      ProductDetails,
+      Subcategory,
+      Category,
+      ProductSale,
+    ]),
+  ],
+  controllers: [AdminProductController],
   providers: [AdminProductService],
-  exports: [AdminProductService], 
+  exports: [AdminProductService],
 })
 export class AdminProductModule {}

@@ -1,3 +1,6 @@
+import { OrderModule } from './admin/orders/order.module';
+import { OrderService } from './admin/orders/order.service';
+import { ProfileModule } from './profile/profile.module';
 import { VentasModule } from './sales/ventas.module';
 import { VentasService } from './sales/ventas.service';
 import { TwilioModule } from './admin/twilio/twilio.module';
@@ -12,7 +15,12 @@ import { EmailService } from './services/email.service';
 import { IncidentMonitorService } from './incidentMonitor/incidentmonitor.service';
 import { IncidentMonitorModule } from './incidentMonitor/incidentmonitor.module';
 import { CompanyProfileModule } from './companyProfile/companyprofile.module';
-import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
+import {
+  Module,
+  MiddlewareConsumer,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { RegisterModule } from './register/register.module';
@@ -39,12 +47,21 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 import { LogService } from './services/logs.service';
 import { TwilioService } from './admin/twilio/twilio.service';
 import { ProductSale } from './schemas/productSale.schema';
-
+import { ProductFilter } from './schemas/productFilters.schema';
+import { Direccion } from './schemas/address.schema';
+import { Favorite } from './schemas/favorites.schema';
+import { Order } from './schemas/order.schema';
+import { OrderItem } from './schemas/order-item.schema';
+import { Notification } from './schemas/notification.schema';
+import { UsersModule } from './admin/users/users.module';
 
 @Module({
   imports: [
-        VentasModule, 
-    TwilioModule, 
+    OrderModule,
+    UsersModule,
+    ProfileModule,
+    VentasModule,
+    TwilioModule,
     AdminProductModule,
     CartModule,
     ReviewModule,
@@ -65,13 +82,37 @@ import { ProductSale } from './schemas/productSale.schema';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB || 'pciTecno',
-      entities: [AppConfig, User, CompanyProfile, Information, Log, ProductDetails, Category, Brand, Color, Subcategory, Filter, Review, CartItem, ProductSpecification, ProductSale],
+      entities: [
+        AppConfig,
+        User,
+        CompanyProfile,
+        Information,
+        Log,
+        ProductDetails,
+        Category,
+        Brand,
+        Color,
+        Subcategory,
+        Filter,
+        Review,
+        CartItem,
+        ProductSpecification,
+        ProductSale,
+        ProductFilter,
+        Direccion,
+        Favorite,
+        Order,
+        OrderItem,
+        Notification
+      ],
       synchronize: false,
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 1000,
-      limit: 10,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 1000,
+        limit: 10,
+      },
+    ]),
     RegisterModule,
     AdminModule,
     AuthModule,

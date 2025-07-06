@@ -11,8 +11,8 @@ export class CategoryController {
     return this.categoryService.findAll();
   }
 
-    @Get(':id/subcategories')
-    async getSubcategories(@Param('id') categoryId: number) {
-      return this.categoryService.findSubcategoriesByCategoryId(categoryId);
-    }
+  @Get(':id/subcategories')
+  async getSubcategories(@Param('id') categoryId: number) {
+    return this.categoryService.findSubcategoriesByCategoryId(categoryId);
+  }
 }

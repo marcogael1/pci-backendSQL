@@ -13,7 +13,7 @@ export class VentasService {
 
     @InjectRepository(ProductDetails)
     private readonly productRepo: Repository<ProductDetails>,
-  ) { }
+  ) {}
 
   async predecirVentas(productId: number) {
     const producto = await this.productRepo.findOne({
@@ -31,7 +31,7 @@ export class VentasService {
       where: { subcategory: { id: subcategoryId } },
     });
 
-    const productIds = productosSubcat.map(p => p.id);
+    const productIds = productosSubcat.map((p) => p.id);
 
     const ventasSubcategoria = await this.salesRepo.find({
       where: { product_id: In(productIds) },
@@ -49,13 +49,15 @@ export class VentasService {
         totalesPorProducto[product_id] = 0;
       }
 
-      ventasPorProducto[product_id][mes] = (ventasPorProducto[product_id][mes] || 0) + quantity_sold;
+      ventasPorProducto[product_id][mes] =
+        (ventasPorProducto[product_id][mes] || 0) + quantity_sold;
       totalesPorProducto[product_id] += quantity_sold;
     });
 
     const productoMasVendido = Object.entries(totalesPorProducto).reduce(
-      (acc, [pid, total]) => (total > acc.total ? { pid: Number(pid), total } : acc),
-      { pid: 0, total: 0 }
+      (acc, [pid, total]) =>
+        total > acc.total ? { pid: Number(pid), total } : acc,
+      { pid: 0, total: 0 },
     );
 
     const ventasPorMesSubcat: Record<string, number> = {};
@@ -66,19 +68,24 @@ export class VentasService {
     });
 
     const mesesSubcat = Object.keys(ventasPorMesSubcat).sort();
-    const cantidadesSubcat = mesesSubcat.map(m => ventasPorMesSubcat[m]);
+    const cantidadesSubcat = mesesSubcat.map((m) => ventasPorMesSubcat[m]);
 
-    const prediccionesSubcategoria = this.calcularPredicciones(mesesSubcat, cantidadesSubcat)
-      .map(p => ({ mes: p.mes, valor: redondearPersonalizado(p.valor) }));
+    const prediccionesSubcategoria = this.calcularPredicciones(
+      mesesSubcat,
+      cantidadesSubcat,
+    ).map((p) => ({ mes: p.mes, valor: redondearPersonalizado(p.valor) }));
     const ventasProducto = ventasPorProducto[productId] || {};
     const mesesProducto = Object.keys(ventasProducto).sort();
-    const cantidadesProducto = mesesProducto.map(m => ventasProducto[m]);
-    const prediccionesProducto = this.calcularPredicciones(mesesProducto, cantidadesProducto)
-      .map(p => ({ mes: p.mes, valor: redondearPersonalizado(p.valor) }));
+    const cantidadesProducto = mesesProducto.map((m) => ventasProducto[m]);
+    const prediccionesProducto = this.calcularPredicciones(
+      mesesProducto,
+      cantidadesProducto,
+    ).map((p) => ({ mes: p.mes, valor: redondearPersonalizado(p.valor) }));
 
-    const proyeccion30Dias = prediccionesProducto.length > 0
-      ? await redondearPersonalizado(prediccionesProducto[0].valor)
-      : 0;
+    const proyeccion30Dias =
+      prediccionesProducto.length > 0
+        ? await redondearPersonalizado(prediccionesProducto[0].valor)
+        : 0;
 
     // Punto de reorden simple: 25% de la proyección o mínimo 3 unidades
     const puntoReorden = Math.max(3, Math.round(proyeccion30Dias * 0.25));
@@ -86,8 +93,11 @@ export class VentasService {
     // Tendencia: comparación entre el último mes real y la predicción más próxima
     const ultimaReal = cantidadesProducto[cantidadesProducto.length - 1] || 0;
     const proximaPred = prediccionesProducto[0]?.valor || 0;
-    const tendencia = ultimaReal > 0 ? ((proximaPred - ultimaReal) / ultimaReal) * 100 : 0;
-    const productoMasVendidoData = productosSubcat.find(p => p.id === productoMasVendido.pid);
+    const tendencia =
+      ultimaReal > 0 ? ((proximaPred - ultimaReal) / ultimaReal) * 100 : 0;
+    const productoMasVendidoData = productosSubcat.find(
+      (p) => p.id === productoMasVendido.pid,
+    );
 
     return {
       producto: {
@@ -108,7 +118,7 @@ export class VentasService {
         meses: mesesSubcat,
         cantidades: cantidadesSubcat,
       },
-      productosDeSubcategoria: productosSubcat.map(p => ({
+      productosDeSubcategoria: productosSubcat.map((p) => ({
         id: p.id,
         nombre: p.name,
         ventasMensuales: ventasPorProducto[p.id] || {},
@@ -126,13 +136,10 @@ export class VentasService {
       recomendaciones: {
         puntoReorden,
         proyeccion30Dias,
-        tendencia: parseFloat(tendencia.toFixed(1)) // Ej: +8.5%
-      }
+        tendencia: parseFloat(tendencia.toFixed(1)), // Ej: +8.5%
+      },
     };
   }
-
-
-
 
   async consultarVentasPorPeriodo(productId: number) {
     const ventas = await this.salesRepo.find({
@@ -149,7 +156,10 @@ export class VentasService {
       const dia = format(fecha, 'yyyy-MM-dd');
       ventasPorDia[dia] = (ventasPorDia[dia] || 0) + quantity_sold;
 
-      const semana = format(startOfWeek(fecha, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+      const semana = format(
+        startOfWeek(fecha, { weekStartsOn: 1 }),
+        'yyyy-MM-dd',
+      );
       ventasPorSemana[semana] = (ventasPorSemana[semana] || 0) + quantity_sold;
 
       const mes = format(fecha, 'yyyy-MM');
@@ -160,10 +170,13 @@ export class VentasService {
     const ordenarPorFecha = (obj: Record<string, number>) =>
       Object.keys(obj)
         .sort()
-        .reduce((acc, key) => {
-          acc[key] = obj[key];
-          return acc;
-        }, {} as Record<string, number>);
+        .reduce(
+          (acc, key) => {
+            acc[key] = obj[key];
+            return acc;
+          },
+          {} as Record<string, number>,
+        );
 
     return {
       producto: productId,
@@ -173,12 +186,10 @@ export class VentasService {
     };
   }
 
-
   // Función auxiliar reutilizable
   private calcularPredicciones(meses: string[], cantidades: number[]) {
-
     const t = meses.map((_, i) => i);
-    const lnX = cantidades.map(x => Math.log(x));
+    const lnX = cantidades.map((x) => Math.log(x));
 
     const n = t.length;
     const sumT = t.reduce((a, b) => a + b, 0);
@@ -203,12 +214,9 @@ export class VentasService {
 
     return predicciones;
   }
-
-
 }
 
 function redondearPersonalizado(valor: number): number {
   const decimal = valor - Math.floor(valor);
   return decimal >= 0.6 ? Math.ceil(valor) : Math.floor(valor);
 }
-

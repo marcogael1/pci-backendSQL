@@ -19,21 +19,28 @@ export class LoggerMiddleware implements NestMiddleware {
 
     // Capturar el evento de finalización de la respuesta
     res.on('finish', async () => {
-      const responseTime = DateTime.now().diff(startTime, 'milliseconds').milliseconds;
+      const responseTime = DateTime.now().diff(
+        startTime,
+        'milliseconds',
+      ).milliseconds;
       const statusCode = res.statusCode;
 
       // Información adicional en caso de error 403
-      const errorDetails = statusCode === 403 ? {
-        message: 'Acceso denegado',
-        attemptedUrl: url,
-        user: userInfo,
-        ip,
-        userAgent: headers['user-agent'],
-        referer: headers['referer']
-      } : null;
+      const errorDetails =
+        statusCode === 403
+          ? {
+              message: 'Acceso denegado',
+              attemptedUrl: url,
+              user: userInfo,
+              ip,
+              userAgent: headers['user-agent'],
+              referer: headers['referer'],
+            }
+          : null;
 
       // Construcción del mensaje de log con correo electrónico
-      const logMessage = `[${DateTime.now().toISO()}] ${method} ${url} ${statusCode} - ${responseTime}ms - IP: ${ip} - ${userInfo}` + 
+      const logMessage =
+        `[${DateTime.now().toISO()}] ${method} ${url} ${statusCode} - ${responseTime}ms - IP: ${ip} - ${userInfo}` +
         (errorDetails ? ` - ERROR: ${JSON.stringify(errorDetails)}` : '');
 
       // Guardar en la base de datos o archivo

@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { ProductDetails } from './productos.schema';
 
 @Entity('product_specifications')
@@ -18,7 +24,9 @@ export class ProductSpecification {
   @Column()
   category_name: string;
 
-  @ManyToOne(() => ProductDetails, (product) => product.specifications, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ProductDetails, (product) => product.specifications, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'product_id' })
   product: ProductDetails;
 }

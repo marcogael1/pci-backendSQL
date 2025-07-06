@@ -10,7 +10,7 @@ import { ProductSale } from 'src/schemas/productSale.schema';
 export class AdminProductService {
   constructor(
     @InjectRepository(ProductDetails)
-    private readonly productDetailsRepo: Repository<ProductDetails>,    
+    private readonly productDetailsRepo: Repository<ProductDetails>,
     @InjectRepository(Subcategory)
     private readonly subcategoryRepo: Repository<Subcategory>,
     @InjectRepository(Category)
@@ -33,14 +33,14 @@ export class AdminProductService {
         .createQueryBuilder('product')
         .leftJoin('product.subcategory', 'subcategory')
         .leftJoin(
-          qb =>
+          (qb) =>
             qb
               .select('ps.product_id', 'ps_product_id')
               .addSelect('SUM(ps.quantity_sold)', 'total_ventas')
               .from(ProductSale, 'ps')
               .groupBy('ps.product_id'),
           'ventas',
-          'ventas.ps_product_id = product.id'
+          'ventas.ps_product_id = product.id',
         )
         .where('subcategory.id = :subcategoryId', { subcategoryId })
         .select([
@@ -50,29 +50,30 @@ export class AdminProductService {
           'product.stock AS stock',
           'product.image_url AS image_url',
           'COALESCE(ventas.total_ventas, 0) AS total_ventas',
-          'subcategory.name AS subcategory_name'
+          'subcategory.name AS subcategory_name',
         ])
         .getRawMany();
-  
-      return result.map(row => ({
+
+      return result.map((row) => ({
         id: row.id,
         name: row.name,
         price: Number(row.price),
         stock: row.stock,
         image_url: row.image_url,
         totalVentas: Number(row.total_ventas),
-        subcategoryName: row.subcategory_name
+        subcategoryName: row.subcategory_name,
       }));
     } catch (error) {
-      throw new InternalServerErrorException('Error al obtener los productos con ventas.');
+      throw new InternalServerErrorException(
+        'Error al obtener los productos con ventas.',
+      );
     }
   }
-  
-  
+
   async getAllSubcategories() {
     try {
-      return await this.subcategoryRepo.find({ 
-        select: ['id', 'name'], 
+      return await this.subcategoryRepo.find({
+        select: ['id', 'name'],
         relations: ['category'], // Asegurar que incluya la categoría
       });
     } catch (error) {

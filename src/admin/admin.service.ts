@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Information } from '../schemas/information.schema';  
+import { Information } from '../schemas/information.schema';
 
 @Injectable()
 export class AdminService {
@@ -37,7 +37,9 @@ export class AdminService {
   }
 
   async findAllDeleted(): Promise<Information[]> {
-    return await this.informationRepository.find({ where: { isDeleted: true } });
+    return await this.informationRepository.find({
+      where: { isDeleted: true },
+    });
   }
 
   async findAll(): Promise<Information[]> {
@@ -45,39 +47,48 @@ export class AdminService {
   }
 
   async findOne(id: string): Promise<Information | null> {
-    const numericId = parseInt(id, 10); 
-    return await this.informationRepository.findOne({ where: { id: numericId } });
+    const numericId = parseInt(id, 10);
+    return await this.informationRepository.findOne({
+      where: { id: numericId },
+    });
   }
-  
 
-  async update(id: string, informationData: Partial<Information>): Promise<Information | null> {
+  async update(
+    id: string,
+    informationData: Partial<Information>,
+  ): Promise<Information | null> {
     await this.informationRepository.update(id, informationData);
-    return this.findOne(id);  
+    return this.findOne(id);
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.informationRepository.update(id, { isDeleted: true });
+    const result = await this.informationRepository.update(id, {
+      isDeleted: true,
+    });
     return result.affected ? true : false;
   }
 
   async setAsCurrentVersion(documentId: string): Promise<Information | null> {
     const idNumber = Number(documentId);
-  
-    const newCurrentDocument = await this.informationRepository.findOne({ where: { id: idNumber } });
+
+    const newCurrentDocument = await this.informationRepository.findOne({
+      where: { id: idNumber },
+    });
     if (!newCurrentDocument) {
       throw new NotFoundException('Documento no encontrado');
     }
-  
+
     await this.informationRepository
       .createQueryBuilder()
       .update(Information)
       .set({ isCurrentVersion: false })
       .where('title = :title', { title: newCurrentDocument.title })
-      .andWhere('isCurrentVersion = :isCurrentVersion', { isCurrentVersion: true })
+      .andWhere('isCurrentVersion = :isCurrentVersion', {
+        isCurrentVersion: true,
+      })
       .execute();
-  
+
     newCurrentDocument.isCurrentVersion = true;
     return await this.informationRepository.save(newCurrentDocument);
   }
-  
 }

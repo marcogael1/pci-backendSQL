@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param,NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  NotFoundException,
+} from '@nestjs/common';
 import { CompanyProfileService } from './companyprofile.service';
 
 @Controller('company-profile')
@@ -18,8 +27,7 @@ export class CompanyProfileController {
     }
     return profile;
   }
-    
-  
+
   @Put()
   async update(@Body() data: any) {
     return await this.companyProfileService.update(data);

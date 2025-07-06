@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { ProductDetails } from './productos.schema';
 import { User } from './user.schema';
 
@@ -7,8 +14,10 @@ export class Review {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => ProductDetails, (product) => product.reviews, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'product_id' }) 
+  @ManyToOne(() => ProductDetails, (product) => product.reviews, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'product_id' })
   product: ProductDetails;
 
   @ManyToOne(() => User, (user) => user.reviews, { onDelete: 'CASCADE' })
@@ -21,6 +30,6 @@ export class Review {
   @Column({ type: 'text', nullable: true })
   comment: string;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'created_at' }) 
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
 }

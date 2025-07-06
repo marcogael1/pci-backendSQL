@@ -1,5 +1,15 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn,ManyToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  ManyToMany,
+  OneToMany,
+} from 'typeorm';
 import { Subcategory } from './subcategory.schema';
+import { ProductDetails } from './productos.schema';
+import { ProductFilter } from './productFilters.schema';
 
 @Entity('filters')
 export class Filter {
@@ -14,4 +24,12 @@ export class Filter {
 
   @ManyToMany(() => Subcategory, (subcategory) => subcategory.filters)
   subcategories: Subcategory[];
+
+  @ManyToMany(() => ProductDetails, (product) => product.filters)
+  products: ProductDetails[];
+
+  @OneToMany(() => ProductFilter, (productFilter) => productFilter.filter)
+  productFilters: ProductFilter[];  // Relación con la tabla intermedia
+  filter: any;
 }
+

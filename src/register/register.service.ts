@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../schemas/user.schema';
@@ -12,15 +16,17 @@ import { AppConfigService } from '../services/config.service';
 import { LogService } from '../services/logs.service';
 @Injectable()
 export class RegisterService {
-  private pendingUsers = new Map<string, { username: string; email: string; password: string, tokenExpiryDate: Date }>();
+  private pendingUsers = new Map<
+    string,
+    { username: string; email: string; password: string; tokenExpiryDate: Date }
+  >();
 
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
     private readonly emailService: EmailService,
     private readonly appConfigService: AppConfigService,
-    private readonly logService: LogService
-  ) { }
-
+    private readonly logService: LogService,
+  ) {}
 
   transporter = nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE,
@@ -35,21 +41,31 @@ export class RegisterService {
       const user = await this.userRepository.findOne({ where: { email } });
       return !!user;
     } catch (error) {
-      await this.logService.createLog(`Error en checkIfEmailExists: ${error.message} - Email: ${email}`);
+      await this.logService.createLog(
+        `Error en checkIfEmailExists: ${error.message} - Email: ${email}`,
+      );
     }
   }
 
-  async sendVerificationEmail(username: string, email: string, password: string): Promise<void> {
+  async sendVerificationEmail(
+    username: string,
+    email: string,
+    password: string,
+  ): Promise<void> {
     try {
       const isCompromised = await this.isPasswordCompromised(password);
       if (isCompromised) {
-        throw new ConflictException('La contraseña ingresada ha sido comprometida en filtraciones previas. Por favor, elige una contraseña diferente.');
+        throw new ConflictException(
+          'La contraseña ingresada ha sido comprometida en filtraciones previas. Por favor, elige una contraseña diferente.',
+        );
       }
 
       const verificationToken = randomBytes(32).toString('hex');
       const config = await this.appConfigService.getAllConfig();
       const tokenExpiryMinutes = config.verificationTokenExpiry || 15;
-      const tokenExpiryDate = new Date(Date.now() + tokenExpiryMinutes * 60 * 1000);
+      const tokenExpiryDate = new Date(
+        Date.now() + tokenExpiryMinutes * 60 * 1000,
+      );
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -72,7 +88,9 @@ export class RegisterService {
 
       const frontendUrl = process.env.FRONTEND_URL;
       const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
-      const emailMessage = config.verificationEmailMessage || "Gracias por registrarte en nuestra aplicación.";
+      const emailMessage =
+        config.verificationEmailMessage ||
+        'Gracias por registrarte en nuestra aplicación.';
 
       const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -103,18 +121,25 @@ export class RegisterService {
 
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      await this.logService.createLog(`Error en sendVerificationEmail: ${error.message} - Usuario: ${username}, Email: ${email}`);
-      throw new ConflictException('No se pudo enviar el correo de verificación.');
+      await this.logService.createLog(
+        `Error en sendVerificationEmail: ${error.message} - Usuario: ${username}, Email: ${email}`,
+      );
+      throw new ConflictException(
+        'No se pudo enviar el correo de verificación.',
+      );
     }
   }
 
-
   async verifyEmailToken(token: string): Promise<any> {
     try {
-      const user = await this.userRepository.findOne({ where: { verificationToken: token } });
+      const user = await this.userRepository.findOne({
+        where: { verificationToken: token },
+      });
 
       if (!user) {
-        throw new BadRequestException('Token de verificación inválido o expirado.');
+        throw new BadRequestException(
+          'Token de verificación inválido o expirado.',
+        );
       }
 
       if (new Date() > user.verificationTokenExpiry) {
@@ -128,23 +153,33 @@ export class RegisterService {
 
       return { message: 'Cuenta verificada y usuario registrado con éxito.' };
     } catch (error) {
-      await this.logService.createLog(`Error en verifyEmailToken: ${error.message} - Token: ${token}`);
+      await this.logService.createLog(
+        `Error en verifyEmailToken: ${error.message} - Token: ${token}`,
+      );
     }
   }
 
   private async isPasswordCompromised(password: string): Promise<boolean> {
     try {
-      const sha1Hash = crypto.createHash('sha1').update(password).digest('hex').toUpperCase();
+      const sha1Hash = crypto
+        .createHash('sha1')
+        .update(password)
+        .digest('hex')
+        .toUpperCase();
       const prefix = sha1Hash.substring(0, 5);
       const suffix = sha1Hash.substring(5);
 
-      const response = await axios.get(`https://api.pwnedpasswords.com/range/${prefix}`);
+      const response = await axios.get(
+        `https://api.pwnedpasswords.com/range/${prefix}`,
+      );
       return response.data.split('\n').some((line) => {
         const [hashSuffix] = line.split(':');
         return hashSuffix.trim() === suffix;
       });
     } catch (error) {
-      await this.logService.createLog(`Error en isPasswordCompromised: ${error.message}`);
+      await this.logService.createLog(
+        `Error en isPasswordCompromised: ${error.message}`,
+      );
       throw new ConflictException('Error al verificar la contraseña.');
     }
   }

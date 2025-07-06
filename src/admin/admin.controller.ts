@@ -1,10 +1,19 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  NotFoundException,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Information } from '../schemas/information.schema';
 
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Post('information')
   async create(@Body() informationData: Partial<Information>) {
@@ -31,7 +40,10 @@ export class AdminController {
   }
 
   @Put('information/:id')
-  async update(@Param('id') id: string, @Body() informationData: Partial<Information>) {
+  async update(
+    @Param('id') id: string,
+    @Body() informationData: Partial<Information>,
+  ) {
     const updatedDocument = await this.adminService.update(id, informationData);
     if (!updatedDocument) {
       throw new NotFoundException(`Documento no encontrado`);
@@ -52,5 +64,4 @@ export class AdminController {
   async setAsCurrentVersion(@Param('id') id: string) {
     return await this.adminService.setAsCurrentVersion(id);
   }
-
 }

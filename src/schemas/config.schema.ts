@@ -8,7 +8,10 @@ export class AppConfig extends BaseEntity {
   @Column({ type: 'int', default: 5 })
   maxLoginAttempts: number;
 
-  @Column({ type: 'text', default: 'Gracias por registrarte en nuestra aplicación.' })
+  @Column({
+    type: 'text',
+    default: 'Gracias por registrarte en nuestra aplicación.',
+  })
   verificationEmailMessage: string;
 
   @Column({ type: 'int', default: 15 })

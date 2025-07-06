@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  JoinColumn,
+} from 'typeorm';
 import { User } from './user.schema';
 import { ProductDetails } from './productos.schema';
 
@@ -7,12 +15,15 @@ export class CartItem {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, (user) => user.cartItems, { nullable: true, onDelete: 'CASCADE' }) // 🔥 Permitir null
+  @ManyToOne(() => User, (user) => user.cartItems, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  }) // 🔥 Permitir null
   @JoinColumn({ name: 'user_id' })
   user: User | null;
 
   @ManyToOne(() => ProductDetails, (product) => product.cartItems)
-  @JoinColumn({ name: 'product_id' })  // Asegúrate de que en la BD la columna sea 'product_id'
+  @JoinColumn({ name: 'product_id' }) // Asegúrate de que en la BD la columna sea 'product_id'
   product: ProductDetails;
 
   @Column({ type: 'int' })
@@ -26,5 +37,4 @@ export class CartItem {
 
   @Column({ name: 'guest_id', type: 'varchar', length: 50, nullable: true }) // 🔥 Nombre explícito en la BD
   guestId: string | null;
-
 }

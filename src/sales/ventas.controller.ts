@@ -4,17 +4,15 @@ import { get } from 'http';
 
 @Controller('ventas')
 export class VentasController {
-    constructor(private readonly ventasService: VentasService) { }
+  constructor(private readonly ventasService: VentasService) {}
 
-    @Get('prediccion/:productId')
-    async predecir(@Param('productId') productId: string) {
-        return this.ventasService.predecirVentas(Number(productId));
-    }
+  @Get('prediccion/:productId')
+  async predecir(@Param('productId') productId: string) {
+    return this.ventasService.predecirVentas(Number(productId));
+  }
 
-
-    @Get('periodos/:productId')
-    async consultarPeriodos(@Param('productId') id: string) {
-        return this.ventasService.consultarVentasPorPeriodo(Number(id));
-    }
-
+  @Get('periodos/:productId')
+  async consultarPeriodos(@Param('productId') id: string) {
+    return this.ventasService.consultarVentasPorPeriodo(Number(id));
+  }
 }

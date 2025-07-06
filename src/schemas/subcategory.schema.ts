@@ -1,7 +1,16 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany,ManyToMany,JoinTable } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
+} from 'typeorm';
 import { Category } from './category.schema';
 import { ProductDetails } from './productos.schema';
-import { Filter } from './filters.schema'; 
+import { Filter } from './filters.schema';
 @Entity('subcategories')
 export class Subcategory {
   @PrimaryGeneratedColumn()
@@ -10,7 +19,7 @@ export class Subcategory {
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @ManyToOne(() => Category, category => category.subcategories)
+  @ManyToOne(() => Category, (category) => category.subcategories)
   @JoinColumn({ name: 'category_id' })
   category: Category;
 
