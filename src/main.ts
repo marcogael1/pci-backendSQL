@@ -11,9 +11,11 @@ async function bootstrap() {
   app.use(cookieParser());
   const logService = app.get(LogService);
   app.useGlobalFilters(new GlobalExceptionFilter(logService));
-  await app.listen(3000, '0.0.0.0');
-  console.log('Servidor corriendo en http://localhost:3000');
-  console.log('Accessible from emulator at http://10.0.2.2:3000');
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`Servidor corriendo en el puerto ${port}`);
 }
+
 
 bootstrap();
