@@ -19,7 +19,7 @@ export class OrderController {
 
   @Get()
   async getAllOrders(@Req() req: Request) {
-    if (req.user?.role !== 'admin') {
+    if (req.user?.role !== 'admin' && req.user?.role !== 'empleado') {
       throw new ForbiddenException('No tienes permisos para ver los pedidos.');
     }
     return await this.orderService.findAll();
@@ -27,7 +27,7 @@ export class OrderController {
 
   @Get(':id/items')
   async getOrderItems(@Param('id') id: number, @Req() req: Request) {
-    if (req.user?.role !== 'admin') {
+     if (req.user?.role !== 'admin' && req.user?.role !== 'empleado') {
       throw new ForbiddenException('No tienes permisos para ver los productos del pedido.');
     }
     return await this.orderService.findItemsByOrderId(id);
@@ -39,7 +39,7 @@ export class OrderController {
     @Body() body: { status: string },
     @Req() req: Request,
   ) {
-    if (req.user?.role !== 'admin') {
+     if (req.user?.role !== 'admin' && req.user?.role !== 'empleado') {
       throw new ForbiddenException('No tienes permisos para actualizar el estado del pedido.');
     }
     return await this.orderService.updateStatus(id, body.status);

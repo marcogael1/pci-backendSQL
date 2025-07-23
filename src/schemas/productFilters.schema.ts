@@ -6,7 +6,8 @@ import { Filter } from './filters.schema';
 export class ProductFilter {
   @PrimaryGeneratedColumn()
   id: number;
-
+   @Column()
+  product_id: number;
   @ManyToOne(() => ProductDetails, (product) => product.productFilters)
   @JoinColumn({ name: 'product_id' })
   product: ProductDetails;

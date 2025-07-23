@@ -10,6 +10,7 @@ import {
 import { Subcategory } from './subcategory.schema';
 import { ProductDetails } from './productos.schema';
 import { ProductFilter } from './productFilters.schema';
+import { SubcategoryFilter } from './subcategory_filters.schema';
 
 @Entity('filters')
 export class Filter {
@@ -29,7 +30,9 @@ export class Filter {
   products: ProductDetails[];
 
   @OneToMany(() => ProductFilter, (productFilter) => productFilter.filter)
-  productFilters: ProductFilter[];  // Relación con la tabla intermedia
-  filter: any;
+  productFilters: ProductFilter[];
+
+  @OneToMany(() => SubcategoryFilter, (sf) => sf.filter)
+  subcategoryFilters: SubcategoryFilter[];
 }
 

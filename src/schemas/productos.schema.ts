@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   ManyToMany,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Subcategory } from './subcategory.schema';
 import { Brand } from './brand.schema';
@@ -22,8 +23,9 @@ import { OrderItem } from './order-item.schema';
 import { Notification } from './notification.schema';
 @Entity('products')
 export class ProductDetails {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn()
   id: number;
+
 
   @Column({ type: 'varchar', length: 255 })
   name: string;
@@ -93,5 +95,6 @@ export class ProductDetails {
 
   @OneToMany(() => Notification, (notification) => notification.product)
   notifications: Notification[];
+  product: { id: any; };
 
 }

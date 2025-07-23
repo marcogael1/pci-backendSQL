@@ -1,3 +1,4 @@
+import { CatalogModule } from './admin/catalogAdmin/catalog.module';
 import { OrderModule } from './admin/orders/order.module';
 import { OrderService } from './admin/orders/order.service';
 import { ProfileModule } from './profile/profile.module';
@@ -54,9 +55,11 @@ import { Order } from './schemas/order.schema';
 import { OrderItem } from './schemas/order-item.schema';
 import { Notification } from './schemas/notification.schema';
 import { UsersModule } from './admin/users/users.module';
+import { SubcategoryFilter } from './schemas/subcategory_filters.schema';
 
 @Module({
   imports: [
+    CatalogModule,
     OrderModule,
     UsersModule,
     ProfileModule,
@@ -103,7 +106,8 @@ import { UsersModule } from './admin/users/users.module';
         Favorite,
         Order,
         OrderItem,
-        Notification
+        Notification,
+        SubcategoryFilter,
       ],
       synchronize: false,
     }),

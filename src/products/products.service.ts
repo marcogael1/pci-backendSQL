@@ -13,6 +13,8 @@ import { Subcategory } from '../schemas/subcategory.schema';
 import { Filter } from '../schemas/filters.schema';
 import { LogService } from '../services/logs.service';
 import { Review } from 'src/schemas/review.schema';
+import { HttpService } from '@nestjs/axios';
+import { OrderItem } from 'src/schemas/order-item.schema';
 
 interface FilterWithValues {
   id: number;
@@ -36,6 +38,9 @@ export class ProductService {
     private readonly logService: LogService,
     @InjectRepository(Review)
     private readonly reviewRepo: Repository<Review>,
+    private readonly httpService: HttpService,
+    @InjectRepository(OrderItem)
+    private readonly orderItemRepository: Repository<OrderItem>
   ) { }
 
   async getAllProductDetails() {
@@ -187,109 +192,109 @@ export class ProductService {
   }
 
   async getProductsBySubcategoryName(
-  subcategoryName: string,
-): Promise<{
-  products: ProductDetails[];
-  filters: FilterWithValues[];
-  brands: {
-    id: number;
-    name: string;
-    product_ids: number[];
-  }[];
-}> {
-  try {
-    const subcategory = await this.subcategoryRepository.findOne({
-      where: { name: subcategoryName },
-      relations: ['products', 'products.brand'],
-    });
+    subcategoryName: string,
+  ): Promise<{
+    products: ProductDetails[];
+    filters: FilterWithValues[];
+    brands: {
+      id: number;
+      name: string;
+      product_ids: number[];
+    }[];
+  }> {
+    try {
+      const subcategory = await this.subcategoryRepository.findOne({
+        where: { name: subcategoryName },
+        relations: ['products', 'products.brand'],
+      });
 
-    if (!subcategory) {
-      await this.logService.createLog(
-        `Subcategoría no encontrada: ${subcategoryName}`,
-      );
-      throw new NotFoundException(
-        `La subcategoría "${subcategoryName}" no fue encontrada.`,
-      );
-    }
+      if (!subcategory) {
+        await this.logService.createLog(
+          `Subcategoría no encontrada: ${subcategoryName}`,
+        );
+        throw new NotFoundException(
+          `La subcategoría "${subcategoryName}" no fue encontrada.`,
+        );
+      }
 
-    const products = await this.productDetailsRepo.find({
-      where: { subcategory: { id: subcategory.id } },
-      relations: ['brand'],
-    });
+      const products = await this.productDetailsRepo.find({
+        where: { subcategory: { id: subcategory.id } },
+        relations: ['brand'],
+      });
 
-    const productIds = products.map(p => p.id);
+      const productIds = products.map(p => p.id);
 
-    const filtersData = await this.filterRepository
-      .createQueryBuilder('filter')
-      .innerJoin('subcategory_filters', 'sf', 'sf.filter_id = filter.id')
-      .innerJoin('product_filters', 'pf', 'pf.filter_id = filter.id')
-      .innerJoin('products', 'p', 'pf.product_id = p.id')
-      .where('sf.subcategory_id = :subcategoryId', {
-        subcategoryId: subcategory.id,
-      })
-      .andWhere('p.id IN (:...productIds)', { productIds })
-      .select([
-        'filter.id AS id',
-        'filter.name AS name',
-        'pf.value AS value',
-        'COUNT(p.id) AS product_count',
-        'ARRAY_AGG(p.id) AS product_ids',
-      ])
-      .groupBy('filter.id, filter.name, pf.value')
-      .getRawMany();
+      const filtersData = await this.filterRepository
+        .createQueryBuilder('filter')
+        .innerJoin('subcategory_filters', 'sf', 'sf.filter_id = filter.id')
+        .innerJoin('product_filters', 'pf', 'pf.filter_id = filter.id')
+        .innerJoin('products', 'p', 'pf.product_id = p.id')
+        .where('sf.subcategory_id = :subcategoryId', {
+          subcategoryId: subcategory.id,
+        })
+        .andWhere('p.id IN (:...productIds)', { productIds })
+        .select([
+          'filter.id AS id',
+          'filter.name AS name',
+          'pf.value AS value',
+          'COUNT(p.id) AS product_count',
+          'ARRAY_AGG(p.id) AS product_ids',
+        ])
+        .groupBy('filter.id, filter.name, pf.value')
+        .getRawMany();
 
-    const filtersGrouped = filtersData.reduce((acc, filter) => {
-      const existing = acc.find(f => f.id === filter.id);
-      if (existing) {
-        existing.values.push({
-          value: filter.value,
-          product_count: parseInt(filter.product_count),
-          product_ids: filter.product_ids,
-        });
-      } else {
-        acc.push({
-          id: filter.id,
-          name: filter.name,
-          values: [{
+      const filtersGrouped = filtersData.reduce((acc, filter) => {
+        const existing = acc.find(f => f.id === filter.id);
+        if (existing) {
+          existing.values.push({
             value: filter.value,
             product_count: parseInt(filter.product_count),
             product_ids: filter.product_ids,
-          }],
-        });
-      }
-      return acc;
-    }, []);
+          });
+        } else {
+          acc.push({
+            id: filter.id,
+            name: filter.name,
+            values: [{
+              value: filter.value,
+              product_count: parseInt(filter.product_count),
+              product_ids: filter.product_ids,
+            }],
+          });
+        }
+        return acc;
+      }, []);
 
-    // ✅ Agrupar marcas con productos correspondientes
-    const brandMap = new Map<number, { id: number; name: string; product_ids: number[] }>();
+      // ✅ Agrupar marcas con productos correspondientes
+      const brandMap = new Map<number, { id: number; name: string; product_ids: number[] }>();
 
-    for (const product of products) {
-      if (!product.brand) continue;
-      const existing = brandMap.get(product.brand.id);
-      if (existing) {
-        existing.product_ids.push(product.id);
-      } else {
-        brandMap.set(product.brand.id, {
-          id: product.brand.id,
-          name: product.brand.name,
-          product_ids: [product.id],
-        });
+      for (const product of products) {
+        if (!product.brand) continue;
+        const existing = brandMap.get(product.brand.id);
+        if (existing) {
+          existing.product_ids.push(product.id);
+        } else {
+          brandMap.set(product.brand.id, {
+            id: product.brand.id,
+            name: product.brand.name,
+            product_ids: [product.id],
+          });
+        }
       }
+
+      const brands = Array.from(brandMap.values());
+
+      return {
+        products,
+        filters: filtersGrouped,
+        brands, // Ahora contiene id, nombre y product_ids
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'No se pudieron obtener los productos de la subcategoría.',
+      );
     }
-
-    const brands = Array.from(brandMap.values());
-
-    return {
-      products,
-      filters: filtersGrouped,
-      brands, // Ahora contiene id, nombre y product_ids
-    };
-  } catch (error) {
-    throw new InternalServerErrorException(
-      'No se pudieron obtener los productos de la subcategoría.',
-    );
   }
-}
 
 
 
@@ -314,7 +319,124 @@ export class ProductService {
     }
   }
 
-  async getRecommendedProducts(): Promise<any[]> {
+  async getRecommendedProducts(userId?: number): Promise<any[]> {
+    try {
+      // ✅ Si no hay usuario autenticado, regresar productos aleatorios directamente
+      if (!userId) {
+        const randomIds = getRandomUniqueIds(1, 259, 10);
+
+        const { entities, raw } = await this.productDetailsRepo
+          .createQueryBuilder('product')
+          .leftJoin('product.reviews', 'review')
+          .leftJoin('product.category', 'category')
+          .where('product.id IN (:...ids)', { ids: randomIds })
+          .addSelect('AVG(review.rating)', 'avg_rating')
+          .addSelect('COUNT(review.id)', 'review_count')
+          .addSelect('category.name', 'category_name')
+          .groupBy('product.id, category.id, category.name')
+          .getRawAndEntities();
+
+        return entities.map((product, i) => ({
+          ...product,
+          avg_rating: parseFloat(raw[i]?.avg_rating) || 0,
+          review_count: parseInt(raw[i]?.review_count) || 0,
+          category: raw[i]?.category_name || null,
+        }));
+      }
+
+
+      // ✅ Si hay usuario, consultar sus productos comprados
+      const productosComprados = await this.orderItemRepository
+        .createQueryBuilder('item')
+        .innerJoin('item.order', 'order')
+        .innerJoin('item.product', 'product')
+        .where('order.user.id = :userId', { userId })
+        .select('DISTINCT product.id', 'productId')
+        .getRawMany();
+
+      const productIdsComprados = productosComprados.map(p => String(p.productId));
+
+      // Si no compró nada, usar fallback
+      if (productIdsComprados.length === 0) {
+        return this.getFallbackProducts();
+      }
+
+      // Llamar microservicio
+      const { data } = await this.httpService
+        .post('https://pcitecnologia-python.8lskvx.easypanel.host/recomendar', {
+          productos: productIdsComprados,
+        })
+        .toPromise();
+
+      const idsRecomendados: string[] = data.recomendaciones || [];
+
+      // Si no hay recomendaciones, usar fallback
+      if (idsRecomendados.length === 0) {
+        return this.getFallbackProducts();
+      }
+
+      // Obtener productos recomendados enriquecidos
+      const productosRecomendados = await this.productDetailsRepo
+        .createQueryBuilder('product')
+        .leftJoin('product.reviews', 'review')
+        .leftJoin('product.category', 'category')
+        .where('product.id IN (:...ids)', { ids: idsRecomendados })
+        .addSelect('AVG(review.rating)', 'avg_rating')
+        .addSelect('COUNT(review.id)', 'review_count')
+        .addSelect('category.name', 'category_name')
+        .groupBy('product.id, category.id, category.name')
+        .orderBy('product.id') // seguro
+        .getRawAndEntities();
+
+      return productosRecomendados.entities.map((product, i) => ({
+        ...product,
+        avg_rating: parseFloat(productosRecomendados.raw[i]?.avg_rating) || 0,
+        review_count: parseInt(productosRecomendados.raw[i]?.review_count) || 0,
+        category: productosRecomendados.raw[i]?.category_name || null,
+      }));
+    } catch (error) {
+      console.error('Error en getRecommendedProducts:', error);
+      throw new InternalServerErrorException('No se pudieron obtener recomendaciones.');
+    }
+  }
+
+  // 🔁 Factorizamos el fallback para usarlo en 2 lugares
+  private async getFallbackProducts(): Promise<any[]> {
+    // Generar 10 IDs aleatorios únicos entre 1 y 259
+    const getRandomUniqueIds = (min: number, max: number, count: number): number[] => {
+      const ids = new Set<number>();
+      while (ids.size < count) {
+        const random = Math.floor(Math.random() * (max - min + 1)) + min;
+        ids.add(random);
+      }
+      return Array.from(ids);
+    };
+
+    const randomIds = getRandomUniqueIds(1, 259, 10);
+
+    // Obtener productos con esos IDs aleatorios (agregados con ratings y categoría)
+    const { entities, raw } = await this.productDetailsRepo
+      .createQueryBuilder('product')
+      .leftJoin('product.reviews', 'review')
+      .leftJoin('product.category', 'category')
+      .where('product.id IN (:...ids)', { ids: randomIds })
+      .addSelect('AVG(review.rating)', 'avg_rating')
+      .addSelect('COUNT(review.id)', 'review_count')
+      .addSelect('category.name', 'category_name')
+      .groupBy('product.id, category.id, category.name')
+      .getRawAndEntities();
+
+    return entities.map((product, i) => ({
+      ...product,
+      avg_rating: parseFloat(raw[i]?.avg_rating) || 0,
+      review_count: parseInt(raw[i]?.review_count) || 0,
+      category: raw[i]?.category_name || null,
+    }));
+  }
+
+
+
+  async getDestacadosProducts(): Promise<any[]> {
     try {
       const { entities, raw } = await this.productDetailsRepo
         .createQueryBuilder('product')
@@ -325,48 +447,24 @@ export class ProductService {
         .addSelect('category.name', 'category_name')
         .addSelect('category.id', 'category_id')
         .groupBy('product.id, category.id, category.name')
-        .orderBy('avg_rating', 'DESC')
-        .addOrderBy('product.created_at', 'DESC')
+        .orderBy('product.created_at', 'DESC') // más recientes primero
+        .limit(10)
         .getRawAndEntities();
 
-
-      const recomendados = entities.slice(0, 10).map((product, i) => ({
+      return entities.map((product, i) => ({
         ...product,
-        avg_rating: parseFloat(raw[i]?.avg_rating) || null,
+        avg_rating: parseFloat(raw[i]?.avg_rating) || 0,
         review_count: parseInt(raw[i]?.review_count) || 0,
-        category: raw[i]?.category_name || null, // 👈 aquí va el nombre
+        category: raw[i]?.category_name || null,
       }));
-
-      if (recomendados.length < 10) {
-        const ids = recomendados.map((p) => p.id);
-        const faltantes = 10 - recomendados.length;
-
-        const adicionales = await this.productDetailsRepo
-          .createQueryBuilder('product')
-          .leftJoinAndSelect('product.category', 'category') // también traemos categoría
-          .where(ids.length > 0 ? 'product.id NOT IN (:...ids)' : '1=1', { ids })
-          .orderBy('product.created_at', 'DESC')
-          .take(faltantes)
-          .getMany();
-
-        const adicionalesConDatos = adicionales.map((product) => ({
-          ...product,
-          avg_rating: null,
-          review_count: 0,
-          category: product.category?.name || null, // 👈 nombre directo de categoría
-        }));
-
-        return [...recomendados, ...adicionalesConDatos];
-      }
-
-      return recomendados;
     } catch (error) {
-      console.log(error)
+      console.error('Error en getRecommendedProducts:', error);
       throw new InternalServerErrorException(
-        'No se pudieron cargar productos recomendados.',
+        'No se pudieron cargar productos recientes.',
       );
     }
   }
+
 
   async getTopSubcategoriesWithMostProducts(): Promise<
     { name: string; image: string; product_count: number; category_name: string }[]
@@ -402,7 +500,7 @@ export class ProductService {
 
   async getRelatedProducts(productId: number): Promise<any[]> {
     try {
-      // 1. Obtener el producto original con su subcategoría
+      // 1. Obtener producto y subcategoría
       const product = await this.productDetailsRepo.findOne({
         where: { id: productId },
         relations: ['subcategory'],
@@ -412,8 +510,8 @@ export class ProductService {
         throw new NotFoundException('Producto o subcategoría no encontrados.');
       }
 
-      // 2. Obtener productos relacionados
-      const relatedProducts = await this.productDetailsRepo
+      // 2. Productos de la misma subcategoría (excluyendo el actual)
+      const sameSubcategoryProducts = await this.productDetailsRepo
         .createQueryBuilder('product')
         .leftJoinAndSelect('product.brand', 'brand')
         .leftJoinAndSelect('product.subcategory', 'subcategory')
@@ -423,10 +521,33 @@ export class ProductService {
         .limit(10)
         .getMany();
 
+      // 3. Llamar a la API de recomendaciones Python
+      const response = await this.httpService.axiosRef.post(
+        'https://pcitecnologia-python.8lskvx.easypanel.host/recomendar',
+        { productos: [String(productId)] },
+      );
+      const recommendedIds: string[] = response.data.recomendaciones || [];
 
-      // 3. Agregar promedio y total de reseñas a cada producto
+      // 4. Buscar productos por ID recomendados (si no es el mismo)
+      const recommendedProducts = recommendedIds.length
+        ? await this.productDetailsRepo
+          .createQueryBuilder('product')
+          .leftJoinAndSelect('product.brand', 'brand')
+          .leftJoinAndSelect('product.subcategory', 'subcategory')
+          .where('product.id IN (:...ids)', { ids: recommendedIds.map(id => +id) })
+          .andWhere('product.id != :productId', { productId })
+          .getMany()
+        : [];
+
+      // 5. Combinar sin duplicados
+      const allProductsMap = new Map<number, any>();
+      [...sameSubcategoryProducts, ...recommendedProducts].forEach((p) =>
+        allProductsMap.set(p.id, p),
+      );
+
+      // 6. Enriquecer con reviews
       const enrichedProducts = await Promise.all(
-        relatedProducts.map(async (p) => {
+        Array.from(allProductsMap.values()).map(async (p) => {
           const { averageRating, totalReviews } = await this.reviewRepo
             .createQueryBuilder('review')
             .select('AVG(review.rating)', 'averageRating')
@@ -444,17 +565,21 @@ export class ProductService {
 
       return enrichedProducts;
     } catch (error) {
-      console.error('Error en getRelatedProducts:', error); // 👈 Agregado
-      await this.logService.createLog(
-        `Error en getRelatedProducts: ${error.message}`,
-      );
-      throw new InternalServerErrorException(
-        'Error al obtener productos relacionados.',
-      );
+      console.error('Error en getRelatedProducts:', error);
+      await this.logService.createLog(`Error en getRelatedProducts: ${error.message}`);
+      throw new InternalServerErrorException('Error al obtener productos relacionados.');
     }
-
   }
 
 
 
+
+}
+function getRandomUniqueIds(min: number, max: number, count: number): number[] {
+  const ids = new Set<number>();
+  while (ids.size < count) {
+    const random = Math.floor(Math.random() * (max - min + 1)) + min;
+    ids.add(random);
+  }
+  return Array.from(ids);
 }

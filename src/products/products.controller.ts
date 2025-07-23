@@ -4,11 +4,15 @@ import {
   NotFoundException,
   Param,
   Query,
+  Req,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductService } from './products.service';
 import { ProductDetails } from 'src/schemas/productos.schema';
 import { Filter } from '../schemas/filters.schema';
-
+import { JwtAuthGuard } from 'src/jwtauthguard.guard';
+import * as jwt from 'jsonwebtoken';
 interface FilterWithValues {
   id: number;
   name: string;
@@ -77,20 +81,20 @@ export class ProductController {
     return this.productService.getUniqueColors();
   }
 
-@Get('by-subcategory/:subcategoryName')
-async getProductsBySubcategory(
-  @Param('subcategoryName') subcategoryName: string,
-): Promise<{
-  products: ProductDetails[];
-  filters: FilterWithValues[];
-  brands: {
-    id: number;
-    name: string;
-    product_ids: number[];
-  }[];
-}> {
-  return this.productService.getProductsBySubcategoryName(subcategoryName);
-}
+  @Get('by-subcategory/:subcategoryName')
+  async getProductsBySubcategory(
+    @Param('subcategoryName') subcategoryName: string,
+  ): Promise<{
+    products: ProductDetails[];
+    filters: FilterWithValues[];
+    brands: {
+      id: number;
+      name: string;
+      product_ids: number[];
+    }[];
+  }> {
+    return this.productService.getProductsBySubcategoryName(subcategoryName);
+  }
 
 
 
@@ -100,8 +104,26 @@ async getProductsBySubcategory(
   }
 
   @Get('recomendados')
-  async getRecommendedProducts() {
-    return await this.productService.getRecommendedProducts();
+  async getRecommendedProducts(@Req() req) {
+    let userId: number | undefined = undefined;
+
+    const token = req.cookies?.jwt;
+
+    if (token) {
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET);
+        userId = Number(decoded?.userId);
+      } catch (err) {
+        console.warn('Token inválido o expirado, mostrando productos aleatorios o populares.');
+      }
+    }
+
+    return this.productService.getRecommendedProducts(userId);
+  }
+
+  @Get('destacados')
+  async getDestacadosProducts() {
+    return this.productService.getDestacadosProducts(); // sin parámetros
   }
 
 

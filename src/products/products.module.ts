@@ -12,7 +12,8 @@ import { Filter } from 'src/schemas/filters.schema';
 import { LogsModule } from 'src/services/logs.module';
 import { Review } from 'src/schemas/review.schema';
 import { ProductFilter } from 'src/schemas/productFilters.schema';
-
+import { HttpModule } from '@nestjs/axios'; // 👈
+import { OrderItem } from 'src/schemas/order-item.schema';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -23,10 +24,12 @@ import { ProductFilter } from 'src/schemas/productFilters.schema';
       Subcategory,
       Filter,
       Review,
-      ProductFilter
+      ProductFilter,
+      OrderItem
     ]),
     CategoryModule,
     LogsModule,
+    HttpModule, // Asegúrate de importar HttpModule si lo necesitas
   ],
   controllers: [ProductController],
   providers: [ProductService],

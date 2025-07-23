@@ -11,6 +11,7 @@ import {
 import { Category } from './category.schema';
 import { ProductDetails } from './productos.schema';
 import { Filter } from './filters.schema';
+import { SubcategoryFilter } from './subcategory_filters.schema';
 @Entity('subcategories')
 export class Subcategory {
   @PrimaryGeneratedColumn()
@@ -18,6 +19,9 @@ export class Subcategory {
 
   @Column({ type: 'varchar', length: 100 })
   name: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  image: string; // <- AGREGAR ESTO
 
   @ManyToOne(() => Category, (category) => category.subcategories)
   @JoinColumn({ name: 'category_id' })
@@ -33,4 +37,7 @@ export class Subcategory {
     inverseJoinColumn: { name: 'filter_id', referencedColumnName: 'id' },
   })
   filters: Filter[];
+
+  @OneToMany(() => SubcategoryFilter, (sf) => sf.subcategory)
+subcategoryFilters: SubcategoryFilter[];
 }
