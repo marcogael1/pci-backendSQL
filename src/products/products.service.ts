@@ -363,7 +363,7 @@ export class ProductService {
 
       // Llamar microservicio
       const { data } = await this.httpService
-        .post('https://pcitecnologia-python.8lskvx.easypanel.host/recomendar', {
+        .post('https://pci-tecnologia-recommendation.yf3yhp.easypanel.host/recomendar', {
           productos: productIdsComprados,
         })
         .toPromise();
@@ -523,7 +523,7 @@ export class ProductService {
 
       // 3. Llamar a la API de recomendaciones Python
       const response = await this.httpService.axiosRef.post(
-        'https://pcitecnologia-python.8lskvx.easypanel.host/recomendar',
+        'https://pci-tecnologia-recommendation.yf3yhp.easypanel.host/recomendar',
         { productos: [String(productId)] },
       );
       const recommendedIds: string[] = response.data.recomendaciones || [];
