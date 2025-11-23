@@ -49,6 +49,40 @@ export class CartService {
     }));
   }
 
+  async toggleFavorite(userId: number, productId: number) {
+  const user = await this.userRepository.findOne({ where: { id: userId } });
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado.');
+  }
+
+  const product = await this.productRepository.findOne({ where: { id: productId } });
+  if (!product) {
+    throw new NotFoundException('Producto no encontrado.');
+  }
+
+  // Revisar si YA existe como favorito
+  const existingFavorite = await this.favoriteRepository.findOne({
+    where: { user: { id: userId }, product: { id: productId } },
+  });
+
+  // Si ya existía, lo elimina → hace toggle
+  if (existingFavorite) {
+    await this.favoriteRepository.remove(existingFavorite);
+    return { message: 'Producto eliminado de favoritos', isFavorite: false };
+  }
+
+  // Si no existe, lo crea
+  const newFavorite = this.favoriteRepository.create({
+    user,
+    product,
+  });
+
+  await this.favoriteRepository.save(newFavorite);
+
+  return { message: 'Producto agregado a favoritos', isFavorite: true };
+}
+
+
   async getCart(userId: number | null, guestId: string | null) {
     const cartItems = await this.cartRepository.find({
       where: userId ? { user: { id: userId } } : { guestId },

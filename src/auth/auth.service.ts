@@ -8,6 +8,7 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -431,4 +432,46 @@ export class AuthService {
     }
     return true;
   }
+
+
+  async loginMobileNoToken(email: string, password: string): Promise<any> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new UnauthorizedException('El usuario no existe.');
+    }
+
+    if (!user.isVerified) {
+      throw new UnauthorizedException('Tu cuenta no está verificada.');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Credenciales incorrectas.');
+    }
+
+    return {
+      message: 'Inicio de sesión exitoso',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.type,
+      },
+    };
+  }
+
+  // 🔹 Servicio temporal para devolver usuario completo sin token
+  async getUserMock(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['direcciones', 'favorites', 'orders', 'notifications'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+    }
+
+    return user;
+  }
+
 }

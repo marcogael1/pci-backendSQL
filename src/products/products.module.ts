@@ -14,6 +14,7 @@ import { Review } from 'src/schemas/review.schema';
 import { ProductFilter } from 'src/schemas/productFilters.schema';
 import { HttpModule } from '@nestjs/axios'; // 👈
 import { OrderItem } from 'src/schemas/order-item.schema';
+import { ProductSpecification } from 'src/schemas/product_specifications.schema';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -25,7 +26,8 @@ import { OrderItem } from 'src/schemas/order-item.schema';
       Filter,
       Review,
       ProductFilter,
-      OrderItem
+      OrderItem,
+      ProductSpecification
     ]),
     CategoryModule,
     LogsModule,

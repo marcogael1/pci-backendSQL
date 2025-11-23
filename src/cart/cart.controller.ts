@@ -139,6 +139,11 @@ export class CartController {
     return { tieneDireccion };
   }
 
+  @Post('ponerfavorito')
+  async toggleFavorite(@Body() body: { userId: number; productId: number }) {
+    return this.cartService.toggleFavorite(body.userId, body.productId);
+  }
+
   @Get('user/:id')
   async getFavorites(@Param('id') id: number) {
     return this.cartService.getFavoritesByUserId(id);

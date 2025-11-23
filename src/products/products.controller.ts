@@ -137,4 +137,18 @@ export class ProductController {
     return this.productService.getRelatedProducts(id);
   }
 
+
+  // 🆕 Nuevo endpoint para comparar especificaciones de dos productos
+  @Get('compare-specifications')
+  async compareProductSpecifications(
+    @Query('product1Id') product1Id: number,
+    @Query('product2Id') product2Id: number,
+  ) {
+    if (!product1Id || !product2Id) {
+      throw new NotFoundException('Debes proporcionar los IDs de ambos productos.');
+    }
+
+    return this.productService.compareProductSpecifications(product1Id, product2Id);
+  }
+
 }

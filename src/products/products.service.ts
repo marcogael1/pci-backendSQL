@@ -15,6 +15,7 @@ import { LogService } from '../services/logs.service';
 import { Review } from 'src/schemas/review.schema';
 import { HttpService } from '@nestjs/axios';
 import { OrderItem } from 'src/schemas/order-item.schema';
+import { ProductSpecification } from 'src/schemas/product_specifications.schema';
 
 interface FilterWithValues {
   id: number;
@@ -40,7 +41,10 @@ export class ProductService {
     private readonly reviewRepo: Repository<Review>,
     private readonly httpService: HttpService,
     @InjectRepository(OrderItem)
-    private readonly orderItemRepository: Repository<OrderItem>
+    private readonly orderItemRepository: Repository<OrderItem>,
+
+    @InjectRepository(ProductSpecification)
+    private readonly specRepository: Repository<ProductSpecification>,
   ) { }
 
   async getAllProductDetails() {
@@ -434,6 +438,46 @@ export class ProductService {
     }));
   }
 
+  async compareProductSpecifications(product1Id: number, product2Id: number) {
+  // Buscar ambos productos completos (con relaciones si existen)
+  const product1 = await this.productDetailsRepo.findOne({
+    where: { id: product1Id },
+    relations: ['brand', 'category'], // 👈 Ajusta según tus relaciones reales
+  });
+
+  const product2 = await this.productDetailsRepo.findOne({
+    where: { id: product2Id },
+    relations: ['brand', 'category'], // 👈 Ajusta según tus relaciones reales
+  });
+
+  if (!product1 || !product2) {
+    throw new NotFoundException('Uno o ambos productos no existen.');
+  }
+
+  // Buscar especificaciones de cada producto
+  const specs1 = await this.specRepository.find({ where: { product_id: product1Id } });
+  const specs2 = await this.specRepository.find({ where: { product_id: product2Id } });
+
+  // 🧠 Transformar los datos para enviar solo lo necesario
+  const formatProduct = (product: any, specs: any[]) => ({
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    brand: product.brand ? product.brand.name : null,
+    category: product.category ? product.category.name : null,
+    image_url: product.image_url, // si es JSONB o array
+    stock: product.stock,
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+    specifications: specs.length > 0 ? specs : 'Sin especificaciones',
+  });
+
+  return {
+    product1: formatProduct(product1, specs1),
+    product2: formatProduct(product2, specs2),
+  };
+}
 
 
   async getDestacadosProducts(): Promise<any[]> {
@@ -583,3 +627,6 @@ function getRandomUniqueIds(min: number, max: number, count: number): number[] {
   }
   return Array.from(ids);
 }
+
+
+

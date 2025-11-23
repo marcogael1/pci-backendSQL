@@ -9,6 +9,7 @@ import {
   ConflictException,
   BadRequestException,
   Req,
+  Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
@@ -23,7 +24,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly logService: LogService,
     private readonly twilioService: TwilioService,
-  ) {}
+  ) { }
 
   @Post('login')
   async login(
@@ -201,4 +202,29 @@ export class AuthController {
       throw new BadRequestException('Error al verificar el código OTP');
     }
   }
+
+
+
+
+
+  // Endpoint temporal solo para pruebas
+  @Get('mock/:id')
+  async getUserMock(@Param('id') id: number) {
+    return await this.authService.getUserMock(id);
+  }
+
+
+  @Post('mobile-login')
+  async mobileLogin(@Body() loginDto: { email: string; password: string }) {
+    try {
+      const user = await this.authService.loginMobileNoToken(
+        loginDto.email,
+        loginDto.password,
+      );
+      return user;
+    } catch (error) {
+      throw new UnauthorizedException(error.message || 'Error al iniciar sesión.');
+    }
+  }
+
 }
