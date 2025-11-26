@@ -4,29 +4,31 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CorsMiddleware implements NestMiddleware {
-  constructor(private configService: ConfigService) {}
-  
+  constructor(private configService: ConfigService) { }
+
   use(req: Request, res: Response, next: NextFunction) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    
+
     // ✅ ORÍGENES PERMITIDOS - Incluye múltiples URLs
     const allowedOrigins = [
       frontendUrl, // http://localhost:4200
       'http://localhost:3000', // Para pruebas locales
       'http://10.0.2.2:3000', // Para emulador Android
       'http://192.168.0.112:3000', // Para dispositivos físicos en tu red
+      'https://www.pcitecnologia.com', // Para emulador Android
+      'https://pcitecnologia.com/homeNoSession', // Para dispositivos físicos en tu red
     ];
-    
+
     const origin = req.headers.origin;
-    
-    // ✅ VERIFICAR SI EL ORIGEN ESTÁ PERMITIDO
+
     if (allowedOrigins.includes(origin)) {
       res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
     } else {
-      // Para desarrollo, también permitir orígenes null (apps nativas)
-      res.header('Access-Control-Allow-Origin', '*');
+      // Si no es un origen permitido, NO responder nada o bloquear
+      return res.status(403).send('Origin not allowed by CORS');
     }
-    
+
     res.header(
       'Access-Control-Allow-Methods',
       'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -40,7 +42,7 @@ export class CorsMiddleware implements NestMiddleware {
     if (req.method === 'OPTIONS') {
       return res.sendStatus(200);
     }
-    
+
     next();
   }
 }
