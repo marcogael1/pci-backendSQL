@@ -26,7 +26,7 @@ export class CorsMiddleware implements NestMiddleware {
       res.header('Access-Control-Allow-Credentials', 'true');
     } else {
       // Si no es un origen permitido, NO responder nada o bloquear
-      return res.status(403).send('Origin not allowed by CORS');
+      res.header('Access-Control-Allow-Origin', '*');
     }
 
     res.header(
